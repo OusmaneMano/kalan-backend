@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: kalan-backend
+
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/kalan_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:Mano7824}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update          # use 'validate' in production
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  mvc:
+    cors:
+      allowed-origins: "*"
+
+server:
+  port: ${PORT:8080}
+
+# JWT config
+kalan:
+  jwt:
+    secret: ${JWT_SECRET:kalan-super-secret-key-change-in-production-min-32-chars}
+    expiration-ms: 86400000       # 24 hours
+    refresh-expiration-ms: 604800000  # 7 days
+
+logging:
+  level:
+    com.kalan: DEBUG
+    org.springframework.security: INFO

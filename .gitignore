@@ -1,0 +1,42 @@
+# ── Maven ─────────────────────────────────────────────────────────────────────
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# ── Spring Boot ───────────────────────────────────────────────────────────────
+*.jar
+*.war
+*.ear
+*.nar
+
+# ── IntelliJ IDEA ─────────────────────────────────────────────────────────────
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# ── VS Code ───────────────────────────────────────────────────────────────────
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+
+# ── Environment & secrets ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.production
+application-local.yml
+application-prod.yml
+secrets.yml
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
