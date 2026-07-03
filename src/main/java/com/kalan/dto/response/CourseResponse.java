@@ -6,19 +6,19 @@ import java.util.List;
 
 public record CourseResponse(
     Long id,
-    String title,          // localized
-    String description,    // localized
+    String title,
+    String description,
     String topic,
     String level,
     String language,
     String instructorName,
     String thumbnailUrl,
     boolean isFree,
-    String price,          // formatted for user's region
+    String price,
     Double rating,
     Integer studentCount,
     Integer lessonCount,
-    List<LessonResponse> lessons  // null when listing, populated on detail
+    List<LessonResponse> lessons
 ) {
     public static CourseResponse from(Course course, String langCode, String countryCode) {
         return new CourseResponse(
@@ -75,7 +75,9 @@ record LessonResponse(
     String videoUrl,
     Integer durationSeconds,
     boolean isFree,
-    boolean isLocked    // locked if not enrolled and not free
+    boolean isLocked,
+    String notesFr,
+    String notesEn
 ) {
     static LessonResponse from(Lesson lesson, String langCode, boolean enrolled) {
         boolean locked = !lesson.isFree() && !enrolled;
@@ -83,10 +85,12 @@ record LessonResponse(
             lesson.getId(),
             lesson.getOrderIndex(),
             lesson.getLocalizedTitle(langCode),
-            locked ? null : lesson.getVideoUrl(),  // hide URL if locked
+            locked ? null : lesson.getVideoUrl(),
             lesson.getDurationSeconds(),
             lesson.isFree(),
-            locked
+            locked,
+            locked ? null : lesson.getNotesFr(),
+            locked ? null : lesson.getNotesEn()
         );
     }
 }
