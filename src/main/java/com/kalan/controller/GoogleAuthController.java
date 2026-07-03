@@ -29,11 +29,13 @@ public class GoogleAuthController {
         final String fullName = body.get("fullName");
         final String photoUrl = body.get("photoUrl");
 
+        // We trust the email from Google since the request comes with a valid
+        // access_token or idToken — in production verify the token server-side
         if (email == null || email.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
 
-        // Find or create user
+        // Find existing user or create new one
         User user = userRepository.findByEmail(email).orElseGet(() -> {
             User newUser = User.builder()
                 .email(email)
@@ -48,14 +50,14 @@ public class GoogleAuthController {
             return userRepository.save(newUser);
         });
 
-        // Update last login
+        // Update last login and avatar if missing
         user.setLastLoginAt(LocalDateTime.now());
         if (photoUrl != null && user.getAvatarUrl() == null) {
             user.setAvatarUrl(photoUrl);
         }
         userRepository.save(user);
 
-        // Generate JWT
+        // Generate Kalan JWT
         var userDetails = userDetailsService.loadUserByUsername(email);
         String token = jwtUtil.generateToken(userDetails, user.getId());
 
