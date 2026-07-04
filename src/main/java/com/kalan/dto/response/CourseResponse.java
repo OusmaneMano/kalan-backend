@@ -23,9 +23,8 @@ public record CourseResponse(
     public static CourseResponse from(Course course, String langCode, String countryCode) {
         return new CourseResponse(
             course.getId(),
-            course.getLocalizedTitle(langCode),
-            langCode.equals("en") && course.getDescriptionEn() != null
-                ? course.getDescriptionEn() : course.getDescriptionFr(),
+            localizedTitle(course, langCode),
+            localizedDesc(course, langCode),
             course.getTopic(),
             course.getLevel() != null ? course.getLevel().name().toLowerCase() : null,
             course.getLanguage(),
@@ -50,9 +49,8 @@ public record CourseResponse(
 
         return new CourseResponse(
             course.getId(),
-            course.getLocalizedTitle(langCode),
-            langCode.equals("en") && course.getDescriptionEn() != null
-                ? course.getDescriptionEn() : course.getDescriptionFr(),
+            localizedTitle(course, langCode),
+            localizedDesc(course, langCode),
             course.getTopic(),
             course.getLevel() != null ? course.getLevel().name().toLowerCase() : null,
             course.getLanguage(),
@@ -65,6 +63,20 @@ public record CourseResponse(
             lessons.size(),
             lessons
         );
+    }
+
+    private static String localizedTitle(Course course, String lang) {
+        if ("en".equals(lang) && course.getTitleEn() != null && !course.getTitleEn().isBlank())
+            return course.getTitleEn();
+        if ("bm".equals(lang) && course.getTitleBm() != null && !course.getTitleBm().isBlank())
+            return course.getTitleBm();
+        return course.getTitleFr() != null ? course.getTitleFr() : "";
+    }
+
+    private static String localizedDesc(Course course, String lang) {
+        if ("en".equals(lang) && course.getDescriptionEn() != null)
+            return course.getDescriptionEn();
+        return course.getDescriptionFr() != null ? course.getDescriptionFr() : "";
     }
 }
 
@@ -81,10 +93,16 @@ record LessonResponse(
 ) {
     static LessonResponse from(Lesson lesson, String langCode, boolean enrolled) {
         boolean locked = !lesson.isFree() && !enrolled;
+        String title = "en".equals(langCode) && lesson.getTitleEn() != null
+            ? lesson.getTitleEn()
+            : "bm".equals(langCode) && lesson.getTitleBm() != null
+            ? lesson.getTitleBm()
+            : lesson.getTitleFr() != null ? lesson.getTitleFr() : "";
+
         return new LessonResponse(
             lesson.getId(),
             lesson.getOrderIndex(),
-            lesson.getLocalizedTitle(langCode),
+            title,
             locked ? null : lesson.getVideoUrl(),
             lesson.getDurationSeconds(),
             lesson.isFree(),
