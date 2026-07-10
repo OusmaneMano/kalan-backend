@@ -38,8 +38,30 @@ public class Lesson {
 
     private boolean isFree;       // first 3 lessons free
 
+    @Column(columnDefinition = "TEXT")
+    private String notesBm;          // ← existait en DB mais pas dans l'entité !
+
+    private String videoUrlEn;       // video_url_en
+    private String videoUrlBm;       // video_url_bm
+
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL)
     private java.util.List<QuizQuestion> quizQuestions;
+
+    public String getLocalizedNotes(String langCode) {
+        return switch (langCode) {
+            case "en" -> notesEn != null ? notesEn : notesFr;
+            case "bm" -> notesBm != null ? notesBm : notesFr;
+            default   -> notesFr;
+        };
+    }
+
+    public String getLocalizedVideoUrl(String langCode) {
+        return switch (langCode) {
+            case "en" -> videoUrlEn != null ? videoUrlEn : videoUrl;
+            case "bm" -> videoUrlBm != null ? videoUrlBm : videoUrl;
+            default   -> videoUrl;
+        };
+    }
 
     public String getLocalizedTitle(String langCode) {
         return switch (langCode) {
@@ -48,4 +70,5 @@ public class Lesson {
             default   -> titleFr;
         };
     }
+    
 }

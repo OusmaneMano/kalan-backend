@@ -89,26 +89,23 @@ record LessonResponse(
     boolean isFree,
     boolean isLocked,
     String notesFr,
-    String notesEn
+    String notesEn,
+    String notesBm
 ) {
     static LessonResponse from(Lesson lesson, String langCode, boolean enrolled) {
         boolean locked = !lesson.isFree() && !enrolled;
-        String title = "en".equals(langCode) && lesson.getTitleEn() != null
-            ? lesson.getTitleEn()
-            : "bm".equals(langCode) && lesson.getTitleBm() != null
-            ? lesson.getTitleBm()
-            : lesson.getTitleFr() != null ? lesson.getTitleFr() : "";
 
         return new LessonResponse(
             lesson.getId(),
             lesson.getOrderIndex(),
-            title,
-            locked ? null : lesson.getVideoUrl(),
+            lesson.getLocalizedTitle(langCode),
+            locked ? null : lesson.getLocalizedVideoUrl(langCode),
             lesson.getDurationSeconds(),
             lesson.isFree(),
             locked,
             locked ? null : lesson.getNotesFr(),
-            locked ? null : lesson.getNotesEn()
+            locked ? null : lesson.getNotesEn(),
+            locked ? null : lesson.getNotesBm()
         );
     }
 }

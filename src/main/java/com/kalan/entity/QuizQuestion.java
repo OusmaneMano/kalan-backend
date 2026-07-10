@@ -26,8 +26,25 @@ public class QuizQuestion {
     private String optionsFr;
     private String optionsEn;
 
+    @Column(columnDefinition = "TEXT")
+    private String explanationFr;
+
+    @Column(columnDefinition = "TEXT")
+    private String explanationEn;
+
+    @Column(columnDefinition = "TEXT")
+    private String explanationBm;
+
     @Column(nullable = false)
     private Integer correctIndex;  // 0-based index of correct answer
+
+    public String getLocalizedExplanation(String langCode) {
+        return switch (langCode) {
+            case "en" -> explanationEn != null ? explanationEn : explanationFr;
+            case "bm" -> explanationBm != null ? explanationBm : explanationFr;
+            default   -> explanationFr;
+        };
+    }
 
     public String getLocalizedQuestion(String langCode) {
         return switch (langCode) {
@@ -36,4 +53,5 @@ public class QuizQuestion {
             default   -> questionFr;
         };
     }
+
 }

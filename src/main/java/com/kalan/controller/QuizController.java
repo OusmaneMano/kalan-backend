@@ -5,6 +5,9 @@ import com.kalan.repository.LessonRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,19 +31,23 @@ public class QuizController {
             return ResponseEntity.ok(List.of());
         }
 
-        var result = questions.stream().map(q -> {
-            String question = lang.equals("en") && q.getQuestionEn() != null
-                ? q.getQuestionEn() : q.getQuestionFr();
-            String options = lang.equals("en") && q.getOptionsEn() != null
-                ? q.getOptionsEn() : q.getOptionsFr();
+        var result = questions.stream()
+            .sorted(Comparator.comparing(QuizQuestion::getId))
+            .map(q -> {
+                String options = "en".equals(lang) && q.getOptionsEn() != null
+                    ? q.getOptionsEn() : q.getOptionsFr();
 
-            return Map.<String, Object>of(
-                "id",           q.getId(),
-                "question",     question,
-                "options",      options,
-                "correctIndex", q.getCorrectIndex()
-            );
-        }).toList();
+                // HashMap (et pas Map.of) : accepte les valeurs null,
+                // indispensable tant que explanation est null en base
+                Map<String, Object> map = new HashMap<>();
+                map.put("id",           q.getId());
+                map.put("question",     q.getLocalizedQuestion(lang));
+                map.put("options",      options);
+                map.put("correctIndex", q.getCorrectIndex());
+                map.put("explanation",  q.getLocalizedExplanation(lang));
+                return map;
+            })
+            .toList();
 
         return ResponseEntity.ok(result);
     }
