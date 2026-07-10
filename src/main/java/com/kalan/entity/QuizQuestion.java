@@ -16,14 +16,20 @@ public class QuizQuestion {
     @JoinColumn(name = "lesson_id", nullable = false)
     private Lesson lesson;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String questionFr;
+
+    @Column(columnDefinition = "TEXT")
     private String questionEn;
+
+    @Column(columnDefinition = "TEXT")
     private String questionBm;
 
     // Options stored as JSON array string e.g. ["int","String","boolean","double"]
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String optionsFr;
+
+    @Column(columnDefinition = "TEXT")
     private String optionsEn;
 
     @Column(columnDefinition = "TEXT")
