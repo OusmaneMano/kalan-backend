@@ -30,6 +30,11 @@ kalan:
     secret: ${JWT_SECRET:kalan-super-secret-key-change-in-production-min-32-chars}
     expiration-ms: 86400000       # 24 hours
     refresh-expiration-ms: 604800000  # 7 days
+  payments:
+    # false = any enrollment unlocks content (dev). Flip to true once a payment
+    # provider (Mobile Money / card / PayPal) is wired, so paid courses require
+    # paymentStatus FREE or PAID to unlock.
+    enforce: ${PAYMENTS_ENFORCE:false}
 
 logging:
   level:

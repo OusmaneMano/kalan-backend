@@ -50,6 +50,10 @@ public class Course {
     private Double rating = 0.0;
     private Integer studentCount = 0;
 
+    // Fullstack path order: java=1, sql=2, git=3, spring boot=4, flutter=5.
+    // Lower shows first. Null sorts last.
+    private Integer sortOrder;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -81,11 +85,11 @@ public class Course {
         if (isFree) return "0";
         return switch (countryCode) {
             case "ML", "SN", "CI", "BF", "GN", "TG", "BJ", "NE" ->
-                priceXof != null ? priceXof.intValue() + " FCFA" : "3000 FCFA";
+                priceXof != null ? priceXof.intValue() + " FCFA" : "5000 FCFA";
             case "FR", "DE", "BE", "CH", "LU" ->
-                priceEur != null ? priceEur + " €" : "12 €";
+                priceEur != null ? priceEur + " €" : "8 €";
             default ->
-                priceUsd != null ? "$" + priceUsd : "$14";
+                priceUsd != null ? "$" + priceUsd : "$9";
         };
     }
 }

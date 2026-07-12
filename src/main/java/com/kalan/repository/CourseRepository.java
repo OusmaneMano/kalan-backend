@@ -15,6 +15,7 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
         AND (:level IS NULL OR c.level = :level)
         AND (:language IS NULL OR c.language = :language)
         AND (:isFree IS NULL OR c.isFree = :isFree)
+        ORDER BY COALESCE(c.sortOrder, 999) ASC, c.id ASC
     """)
     List<Course> findWithFilters(
         @Param("topic") String topic,

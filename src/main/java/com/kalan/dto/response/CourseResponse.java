@@ -18,6 +18,7 @@ public record CourseResponse(
     Double rating,
     Integer studentCount,
     Integer lessonCount,
+    Integer sortOrder,
     List<LessonResponse> lessons
 ) {
     public static CourseResponse from(Course course, String langCode, String countryCode) {
@@ -35,6 +36,7 @@ public record CourseResponse(
             course.getRating(),
             course.getStudentCount(),
             course.getLessons() != null ? course.getLessons().size() : 0,
+            course.getSortOrder(),
             null
         );
     }
@@ -61,6 +63,7 @@ public record CourseResponse(
             course.getRating(),
             course.getStudentCount(),
             lessons.size(),
+            course.getSortOrder(),
             lessons
         );
     }

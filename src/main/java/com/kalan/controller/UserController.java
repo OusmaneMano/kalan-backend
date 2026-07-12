@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,17 +29,23 @@ public class UserController {
         List<Enrollment> enrollments = enrollmentRepository.findByUserId(user.getId());
         long completed = enrollments.stream().filter(Enrollment::isCompleted).count();
 
-        return ResponseEntity.ok(Map.of(
-            "id",                user.getId(),
-            "email",             user.getEmail(),
-            "fullName",          user.getFullName(),
-            "country",           user.getCountry() != null ? user.getCountry() : "",
-            "preferredLanguage", user.getPreferredLanguage(),
-            "role",              user.getRole().name(),
-            "createdAt",         user.getCreatedAt().toString(),
-            "coursesEnrolled",   enrollments.size(),
-            "coursesCompleted",  completed
-        ));
+        long lessonsCompleted = lessonProgressRepository.countCompletedByUser(user.getId());
+        long watchedSeconds   = lessonProgressRepository.sumWatchedSecondsByUser(user.getId());
+        long hoursLearned     = watchedSeconds / 3600;
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("id",                user.getId());
+        body.put("email",             user.getEmail());
+        body.put("fullName",          user.getFullName());
+        body.put("country",           user.getCountry() != null ? user.getCountry() : "");
+        body.put("preferredLanguage", user.getPreferredLanguage());
+        body.put("role",              user.getRole().name());
+        body.put("createdAt",         user.getCreatedAt().toString());
+        body.put("coursesEnrolled",   enrollments.size());
+        body.put("coursesCompleted",  completed);
+        body.put("lessonsCompleted",  lessonsCompleted);
+        body.put("hoursLearned",      hoursLearned);
+        return ResponseEntity.ok(body);
     }
 
     // GET /api/v1/user/progress
@@ -53,14 +60,15 @@ public class UserController {
             int totalLessons = e.getCourse().getLessons() != null
                 ? e.getCourse().getLessons().size() : 0;
 
-            return Map.<String, Object>of(
-                "courseId",         e.getCourse().getId(),
-                "courseTitle",      e.getCourse().getTitleFr(),
-                "completedLessons", completedLessons,
-                "totalLessons",     totalLessons,
-                "isCompleted",      e.isCompleted(),
-                "enrolledAt",       e.getEnrolledAt().toString()
-            );
+            Map<String, Object> item = new HashMap<>();
+            item.put("courseId",         e.getCourse().getId());
+            item.put("courseTitle",      e.getCourse().getTitleFr());
+            item.put("completedLessons", completedLessons);
+            item.put("totalLessons",     totalLessons);
+            item.put("isCompleted",      e.isCompleted());
+            item.put("enrolledAt",       e.getEnrolledAt().toString());
+            item.put("completedAt",      e.getCompletedAt() != null ? e.getCompletedAt().toString() : null);
+            return item;
         }).toList();
 
         return ResponseEntity.ok(result);
