@@ -60,6 +60,7 @@ public class SecurityConfig {
                     "/api/v1/courses",
                     "/api/v1/courses/*",
                     "/api/v1/lessons/*/quiz",
+                    "/api/v1/payments/webhook/**",
                     "/actuator/health"
                 ).permitAll()
                 .anyRequest().authenticated()
