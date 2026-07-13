@@ -40,6 +40,34 @@ public class PaymentService {
             throw new IllegalStateException("This course is free — no payment needed.");
         }
 
+        // Already own it? Don't let them pay twice.
+        var existing = enrollmentRepository.findByUserIdAndCourseId(user.getId(), courseId);
+        if (existing.isPresent()) {
+            var st = existing.get().getPaymentStatus();
+            if (st == Enrollment.PaymentStatus.PAID || st == Enrollment.PaymentStatus.FREE) {
+                throw new IllegalStateException("You already have access to this course.");
+            }
+        }
+
+        // Reuse an open pending request instead of creating duplicates.
+        Payment pending = paymentRepository
+            .findByStatusOrderByCreatedAtDesc(Payment.Status.PENDING).stream()
+            .filter(p -> p.getUser().getId().equals(user.getId())
+                      && p.getCourse().getId().equals(courseId))
+            .findFirst().orElse(null);
+        if (pending != null) {
+            Map<String, Object> reuse = new HashMap<>();
+            reuse.put("paymentId", pending.getId());
+            reuse.put("reference", pending.getProviderRef());
+            reuse.put("provider", pending.getProvider());
+            reuse.put("method", pending.getMethod());
+            reuse.put("amount", pending.getAmount());
+            reuse.put("currency", pending.getCurrency());
+            reuse.put("checkoutUrl", null);
+            reuse.put("status", pending.getStatus().name());
+            return reuse;
+        }
+
         double amount = course.getPriceXof() != null ? course.getPriceXof() : 5000;
         String currency = "XOF";
         String provider = pickProvider(method);
