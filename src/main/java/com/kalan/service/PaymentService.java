@@ -26,6 +26,15 @@ public class PaymentService {
     private final CourseRepository courseRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final UserRepository userRepository;
+    private final PayPalClient payPalClient;
+
+    @org.springframework.beans.factory.annotation.Value("${paypal.return-url}")
+    private String paypalReturnUrl;
+    @org.springframework.beans.factory.annotation.Value("${paypal.cancel-url}")
+    private String paypalCancelUrl;
+
+    // Euro price for card / PayPal (your euro account). Keep in sync with the app.
+    private static final String PRICE_EUR = "9.00";
 
     // ── 1) Start a payment ────────────────────────────────────────────────────
     // Creates a PENDING transaction and returns what the app needs to proceed.
@@ -49,23 +58,61 @@ public class PaymentService {
             }
         }
 
-        // Reuse an open pending request instead of creating duplicates.
-        Payment pending = paymentRepository
-            .findByStatusOrderByCreatedAtDesc(Payment.Status.PENDING).stream()
-            .filter(p -> p.getUser().getId().equals(user.getId())
-                      && p.getCourse().getId().equals(courseId))
-            .findFirst().orElse(null);
-        if (pending != null) {
-            Map<String, Object> reuse = new HashMap<>();
-            reuse.put("paymentId", pending.getId());
-            reuse.put("reference", pending.getProviderRef());
-            reuse.put("provider", pending.getProvider());
-            reuse.put("method", pending.getMethod());
-            reuse.put("amount", pending.getAmount());
-            reuse.put("currency", pending.getCurrency());
-            reuse.put("checkoutUrl", null);
-            reuse.put("status", pending.getStatus().name());
-            return reuse;
+        // Reuse an open pending Mobile Money request instead of duplicating it.
+        if ("MOBILE_MONEY".equalsIgnoreCase(method)) {
+            Payment pending = paymentRepository
+                .findByStatusOrderByCreatedAtDesc(Payment.Status.PENDING).stream()
+                .filter(p -> p.getUser().getId().equals(user.getId())
+                          && p.getCourse().getId().equals(courseId)
+                          && "MOBILE_MONEY".equalsIgnoreCase(p.getMethod()))
+                .findFirst().orElse(null);
+            if (pending != null) {
+                Map<String, Object> reuse = new HashMap<>();
+                reuse.put("paymentId", pending.getId());
+                reuse.put("reference", pending.getProviderRef());
+                reuse.put("provider", pending.getProvider());
+                reuse.put("method", pending.getMethod());
+                reuse.put("amount", pending.getAmount());
+                reuse.put("currency", pending.getCurrency());
+                reuse.put("checkoutUrl", null);
+                reuse.put("status", pending.getStatus().name());
+                return reuse;
+            }
+        }
+
+        // ── Card / PayPal → create a real PayPal order (9 EUR) ────────────────
+        if ("CARD".equalsIgnoreCase(method) || "PAYPAL".equalsIgnoreCase(method)) {
+            if (!payPalClient.isConfigured()) {
+                throw new IllegalStateException("PayPal is not configured yet.");
+            }
+            try {
+                var order = payPalClient.createOrder(
+                    PRICE_EUR, "EUR",
+                    "Kalan — " + course.getTitleFr(),
+                    paypalReturnUrl, paypalCancelUrl);
+
+                Payment payment = Payment.builder()
+                    .user(user).course(course)
+                    .amount(Double.parseDouble(PRICE_EUR)).currency("EUR")
+                    .method(method).provider("PAYPAL")
+                    .providerRef(order.get("orderId"))
+                    .status(Payment.Status.PENDING)
+                    .build();
+                paymentRepository.save(payment);
+
+                Map<String, Object> body = new HashMap<>();
+                body.put("paymentId", payment.getId());
+                body.put("reference", order.get("orderId"));
+                body.put("provider", "PAYPAL");
+                body.put("method", method);
+                body.put("amount", Double.parseDouble(PRICE_EUR));
+                body.put("currency", "EUR");
+                body.put("checkoutUrl", order.get("approveUrl")); // app opens this
+                body.put("status", Payment.Status.PENDING.name());
+                return body;
+            } catch (Exception e) {
+                throw new RuntimeException("PayPal error: " + e.getMessage());
+            }
         }
 
         double amount = course.getPriceXof() != null ? course.getPriceXof() : 5000;
@@ -166,6 +213,42 @@ public class PaymentService {
                 m.put("createdAt", p.getCreatedAt().toString());
                 return m;
             }).toList();
+    }
+
+    // ── Capture a PayPal order after the user approves it ─────────────────────
+    // Called by the app when it returns from the PayPal checkout.
+    public Map<String, Object> capturePaypal(Long paymentId) {
+        User user = getCurrentUser();
+        Payment payment = paymentRepository.findById(paymentId)
+            .orElseThrow(() -> new RuntimeException("Payment not found"));
+        if (!payment.getUser().getId().equals(user.getId())) {
+            throw new IllegalStateException("Not your payment.");
+        }
+
+        String status;
+        try {
+            status = payPalClient.captureOrder(payment.getProviderRef());
+        } catch (Exception e) {
+            throw new RuntimeException("PayPal capture error: " + e.getMessage());
+        }
+
+        Map<String, Object> body = new HashMap<>();
+        if ("COMPLETED".equalsIgnoreCase(status)) {
+            payment.setStatus(Payment.Status.SUCCESS);
+            payment.setUpdatedAt(LocalDateTime.now());
+            paymentRepository.save(payment);
+            grantAccess(payment);
+            body.put("status", "SUCCESS");
+            body.put("access", true);
+            body.put("courseId", payment.getCourse().getId());
+        } else {
+            payment.setStatus(Payment.Status.FAILED);
+            payment.setUpdatedAt(LocalDateTime.now());
+            paymentRepository.save(payment);
+            body.put("status", status);
+            body.put("access", false);
+        }
+        return body;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

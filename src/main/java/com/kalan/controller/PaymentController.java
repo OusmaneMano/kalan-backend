@@ -40,6 +40,12 @@ public class PaymentController {
             paymentService.handleWebhook(provider, payload != null ? payload : Map.of()));
     }
 
+    // POST /api/v1/payments/{id}/capture  — capture a PayPal order after approval
+    @PostMapping("/{id}/capture")
+    public ResponseEntity<Map<String, Object>> capture(@PathVariable Long id) {
+        return ResponseEntity.ok(paymentService.capturePaypal(id));
+    }
+
     // ── Admin (manual Orange Money approval) ──────────────────────────────────
 
     // GET /api/v1/payments/admin/pending  — requests waiting for your approval

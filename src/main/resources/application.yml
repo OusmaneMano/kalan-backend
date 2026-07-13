@@ -31,10 +31,17 @@ kalan:
     expiration-ms: 86400000       # 24 hours
     refresh-expiration-ms: 604800000  # 7 days
   payments:
-    # false = any enrollment unlocks content (dev). Flip to true once a payment
-    # provider (Mobile Money / card / PayPal) is wired, so paid courses require
-    # paymentStatus FREE or PAID to unlock.
     enforce: ${PAYMENTS_ENFORCE:false}
+
+# PayPal (card + PayPal checkout). Set the two secrets as Render env vars.
+# base-url stays sandbox until you switch to https://api-m.paypal.com for live.
+paypal:
+  base-url: ${PAYPAL_BASE_URL:https://api-m.sandbox.paypal.com}
+  client-id: ${PAYPAL_CLIENT_ID:}
+  secret: ${PAYPAL_SECRET:}
+  # These are intercepted by the app's webview; they don't need to be real pages.
+  return-url: ${PAYPAL_RETURN_URL:https://kalan.app/paypal/return}
+  cancel-url: ${PAYPAL_CANCEL_URL:https://kalan.app/paypal/cancel}
 
 logging:
   level:
