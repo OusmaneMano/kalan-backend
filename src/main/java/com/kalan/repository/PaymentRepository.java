@@ -8,4 +8,5 @@ import java.util.Optional;
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     List<Payment> findByUserIdOrderByCreatedAtDesc(Long userId);
     Optional<Payment> findByProviderRef(String providerRef);
+    List<Payment> findByStatusOrderByCreatedAtDesc(Payment.Status status);
 }

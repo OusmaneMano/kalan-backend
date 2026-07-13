@@ -1,6 +1,7 @@
 package com.kalan.controller;
 
 import com.kalan.dto.request.PaymentInitiateRequest;
+import com.kalan.dto.request.AdminGrantRequest;
 import com.kalan.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -37,6 +38,20 @@ public class PaymentController {
     ) {
         return ResponseEntity.ok(
             paymentService.handleWebhook(provider, payload != null ? payload : Map.of()));
+    }
+
+    // ── Admin (manual Orange Money approval) ──────────────────────────────────
+
+    // GET /api/v1/payments/admin/pending  — requests waiting for your approval
+    @GetMapping("/admin/pending")
+    public ResponseEntity<List<Map<String, Object>>> pending() {
+        return ResponseEntity.ok(paymentService.listPendingManual());
+    }
+
+    // POST /api/v1/payments/admin/grant  body: { email, courseId }
+    @PostMapping("/admin/grant")
+    public ResponseEntity<Map<String, Object>> grant(@RequestBody AdminGrantRequest req) {
+        return ResponseEntity.ok(paymentService.grantManual(req.email(), req.courseId()));
     }
 
     // GET /api/v1/payments   — current user's payment history

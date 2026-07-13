@@ -42,7 +42,7 @@ public class PaymentService {
 
         double amount = course.getPriceXof() != null ? course.getPriceXof() : 5000;
         String currency = "XOF";
-        String provider = pickProvider(method);           // MOCK for now
+        String provider = pickProvider(method);
         String reference = "KLN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
         Payment payment = Payment.builder()
@@ -142,6 +142,73 @@ public class PaymentService {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    // ── Admin: list payments waiting for manual approval ──────────────────────
+    public List<Map<String, Object>> listPendingManual() {
+        requireAdmin();
+        return paymentRepository.findByStatusOrderByCreatedAtDesc(Payment.Status.PENDING)
+            .stream().map(p -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("paymentId", p.getId());
+                m.put("reference", p.getProviderRef());
+                m.put("userEmail", p.getUser().getEmail());
+                m.put("userName", p.getUser().getFullName());
+                m.put("courseId", p.getCourse().getId());
+                m.put("courseTitle", p.getCourse().getTitleFr());
+                m.put("amount", p.getAmount());
+                m.put("currency", p.getCurrency());
+                m.put("method", p.getMethod());
+                m.put("createdAt", p.getCreatedAt().toString());
+                return m;
+            }).toList();
+    }
+
+    // ── Admin: grant access after you've confirmed an Orange Money transfer ────
+    // Finds the learner by email, unlocks the course, and marks any matching
+    // pending payment as SUCCESS (or records one if none exists).
+    public Map<String, Object> grantManual(String email, Long courseId) {
+        requireAdmin();
+        User learner = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("No user with email " + email));
+        Course course = courseRepository.findById(courseId)
+            .orElseThrow(() -> new RuntimeException("Course not found"));
+
+        Payment payment = paymentRepository
+            .findByStatusOrderByCreatedAtDesc(Payment.Status.PENDING).stream()
+            .filter(p -> p.getUser().getId().equals(learner.getId())
+                      && p.getCourse().getId().equals(courseId))
+            .findFirst()
+            .orElseGet(() -> Payment.builder()
+                .user(learner)
+                .course(course)
+                .amount(course.getPriceXof() != null ? course.getPriceXof() : 5000)
+                .currency("XOF")
+                .method("MOBILE_MONEY")
+                .provider("ORANGE_MONEY_MANUAL")
+                .providerRef("KLN-MANUAL-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase())
+                .status(Payment.Status.PENDING)
+                .build());
+
+        payment.setStatus(Payment.Status.SUCCESS);
+        payment.setUpdatedAt(LocalDateTime.now());
+        paymentRepository.save(payment);
+
+        grantAccess(payment);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("granted", true);
+        body.put("userEmail", email);
+        body.put("courseId", courseId);
+        return body;
+    }
+
+    private void requireAdmin() {
+        User user = getCurrentUser();
+        if (user.getRole() != User.Role.ADMIN) {
+            throw new IllegalStateException("Admin only.");
+        }
+    }
+
+
     // Grants PAID access: creates the enrollment if missing, else upgrades it.
     private void grantAccess(Payment payment) {
         User user = payment.getUser();
@@ -167,9 +234,11 @@ public class PaymentService {
         enrollmentRepository.save(enrollment);
     }
 
-    // Which provider handles a given method. Everything is MOCK until real keys
-    // are added — then map e.g. MOBILE_MONEY -> PAYDUNYA/CINETPAY, PAYPAL -> PAYPAL.
+    // Which provider handles a given method. Mobile Money is handled MANUALLY for
+    // now (learner pays your Orange Money number, you approve in the admin screen).
+    // Card/PayPal stay MOCK until a real provider is wired.
     private String pickProvider(String method) {
+        if ("MOBILE_MONEY".equalsIgnoreCase(method)) return "ORANGE_MONEY_MANUAL";
         return "MOCK";
     }
 
