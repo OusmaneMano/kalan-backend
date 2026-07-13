@@ -22,14 +22,17 @@ public class LessonProgress {
     @JoinColumn(name = "lesson_id", nullable = false)
     private Lesson lesson;
 
+    @Builder.Default
     private boolean completed = false;
 
+    @Builder.Default
     private Integer watchedSeconds = 0;   // video watch time
 
     private Integer quizScore;            // null = not attempted
 
     private LocalDateTime completedAt;
 
+    @Builder.Default
     @Column(nullable = false, updatable = false)
     private LocalDateTime startedAt = LocalDateTime.now();
 }

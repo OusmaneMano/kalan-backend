@@ -22,13 +22,16 @@ public class Enrollment {
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
+    @Builder.Default
     @Column(nullable = false, updatable = false)
     private LocalDateTime enrolledAt = LocalDateTime.now();
 
     private LocalDateTime completedAt;   // null = not finished
 
+    @Builder.Default
     private Integer completedLessons = 0;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus = PaymentStatus.FREE;
 

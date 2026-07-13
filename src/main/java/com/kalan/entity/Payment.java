@@ -34,12 +34,15 @@ public class Payment {
 
     private String providerRef;     // provider transaction id / our reference
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     private Status status = Status.PENDING;
 
+    @Builder.Default
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     public enum Status {
