@@ -257,7 +257,11 @@ public class PaymentService {
     public List<Map<String, Object>> listPendingManual() {
         requireAdmin();
         return paymentRepository.findByStatusOrderByCreatedAtDesc(Payment.Status.PENDING)
-            .stream().map(p -> {
+            .stream()
+            // Only manual Orange Money needs approval. Card/PayPal are captured
+            // automatically by the provider — never show them here.
+            .filter(p -> "MOBILE_MONEY".equalsIgnoreCase(p.getMethod()))
+            .map(p -> {
                 Map<String, Object> m = new HashMap<>();
                 m.put("paymentId", p.getId());
                 m.put("reference", p.getProviderRef());
@@ -286,7 +290,8 @@ public class PaymentService {
         Payment payment = paymentRepository
             .findByStatusOrderByCreatedAtDesc(Payment.Status.PENDING).stream()
             .filter(p -> p.getUser().getId().equals(learner.getId())
-                      && p.getCourse().getId().equals(courseId))
+                      && p.getCourse().getId().equals(courseId)
+                      && "MOBILE_MONEY".equalsIgnoreCase(p.getMethod()))
             .findFirst()
             .orElseGet(() -> Payment.builder()
                 .user(learner)
